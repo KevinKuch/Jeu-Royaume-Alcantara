@@ -5,10 +5,11 @@ using TMPro;
 
 public class PlayerDeplacement : MonoBehaviour
 {
-
+    public attack attacks;
     public GameObject playerObj;
     [Header("Movement")]
     public float moveSpeed;
+    
 
     public float groundDrag;
 
@@ -22,6 +23,9 @@ public class PlayerDeplacement : MonoBehaviour
      public float walkSpeed;
      public float sprintSpeed;
     public bool jump;
+    public bool iddleBool;
+    public bool walkingBool;
+    public bool playerAttackBoolSpeed = false;
 
     [Header("Keybinds")]
     public KeyCode jumpKey = KeyCode.Space;
@@ -66,6 +70,10 @@ public class PlayerDeplacement : MonoBehaviour
 
     private void Update()
     {
+        
+        Vector3 flatVel2 = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+       
+        
         // ground check
         grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, whatIsGround);
 
@@ -99,7 +107,7 @@ public class PlayerDeplacement : MonoBehaviour
             playerObj.GetComponent<Animator>().SetBool("dash", false);
             playerObj.GetComponent<Animator>().SetBool("walking", true);
         }
-        if (GetComponent<Rigidbody>().velocity.magnitude < 1)
+        if (flatVel2.magnitude < 1)
         {
             playerObj.GetComponent<Animator>().SetBool("iddle", true);
             playerObj.GetComponent<Animator>().SetBool("sprinting", false);
@@ -107,19 +115,14 @@ public class PlayerDeplacement : MonoBehaviour
             playerObj.GetComponent<Animator>().SetBool("walking", false);
             iddle = true;
             state = MovementState.iddle;
+            iddleBool = true;
         }
-        if (GetComponent<Rigidbody>().velocity.magnitude > 1)
+        if (flatVel2.magnitude > 1)
         {
+            walkingBool = true;
             playerObj.GetComponent<Animator>().SetBool("walking", true);
         }
-        if (iddle == true && dashing == false && sprinting == false && walking == false)
-        {
-            walking = false;
-        }
-        else
-        {
-            walking = true;
-        }
+        
 
     }
 
@@ -174,9 +177,9 @@ public class PlayerDeplacement : MonoBehaviour
         Vector3 flatVel = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
 
         // limit velocity if needed
-        if (flatVel.magnitude > moveSpeed && sprinting == false && dashing == false)
+        if (flatVel.magnitude > moveSpeed && sprinting == false && dashing == false && attacks.performingAnAttack == false)
         {
-         
+
             Vector3 limitedVel = flatVel.normalized * moveSpeed;
             rb.velocity = new Vector3(limitedVel.x, rb.velocity.y, limitedVel.z);
         }
@@ -185,13 +188,28 @@ public class PlayerDeplacement : MonoBehaviour
             Vector3 limitedVel = flatVel.normalized * sprintSpeed;
             rb.velocity = new Vector3(limitedVel.x, rb.velocity.y, limitedVel.z);
         }
-        else if (flatVel.magnitude > moveSpeed && dashing == true)
+        else if (flatVel.magnitude > moveSpeed && dashing == true )
         {
             Vector3 limitedVel = flatVel.normalized * dashSpeed;
             rb.velocity = new Vector3(limitedVel.x, rb.velocity.y, limitedVel.z);
         }
+        else if (flatVel.magnitude > moveSpeed && attacks.performingAnAttack == true)
+        {
+            Vector3 limitedVel = flatVel.normalized * 0.25f;
+            rb.velocity = new Vector3(limitedVel.x, rb.velocity.y, limitedVel.z);
+            
+        }
 
-        text_speed.SetText("Speed: " + flatVel.magnitude);
+
+
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.tag == "ennemie" && attacks.performingAnAttack)
+        {
+            print("hit!");
+        }
     }
 
     private void Jump()
